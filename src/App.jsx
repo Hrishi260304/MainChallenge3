@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import Onboarding from './components/Onboarding';
-import Dashboard from './components/Dashboard';
-import ActivityLogger from './components/ActivityLogger';
-import ActionCenter from './components/ActionCenter';
-import OffsetMarket from './components/OffsetMarket';
-import SandboxCalculator from './components/SandboxCalculator';
-import EcoChat from './components/EcoChat';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+const Onboarding = lazy(() => import('./components/Onboarding'));
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const ActivityLogger = lazy(() => import('./components/ActivityLogger'));
+const ActionCenter = lazy(() => import('./components/ActionCenter'));
+const OffsetMarket = lazy(() => import('./components/OffsetMarket'));
+const SandboxCalculator = lazy(() => import('./components/SandboxCalculator'));
+const EcoChat = lazy(() => import('./components/EcoChat'));
+const CarbonCalculator = lazy(() => import('./components/CarbonCalculator'));
+const ThemeToggle = lazy(() => import('./components/ThemeToggle'));
+
 import { Leaf, Award, Compass, MessageSquare, ShoppingBag, PlusCircle, LayoutDashboard, RefreshCw } from 'lucide-react';
 
 export default function App() {
@@ -48,25 +51,23 @@ export default function App() {
     localStorage.setItem('aether_target', tar.toString());
   };
 
-  const handleLogActivity = (activity) => {
+  const handleLogActivity = useCallback((activity) => {
     const updated = [activity, ...loggedActivities];
     setLoggedActivities(updated);
     localStorage.setItem('aether_activities', JSON.stringify(updated));
 
-    // Increase points
     const newPoints = points + activity.pointsEarned;
     setPoints(newPoints);
     localStorage.setItem('aether_points', newPoints.toString());
 
-    // Update streak mock logic (increases by 1 if there was no logging today)
     if (loggedActivities.length === 0) {
       const newStreak = streak + 1;
       setStreak(newStreak);
       localStorage.setItem('aether_streak', newStreak.toString());
     }
-  };
+  }, [loggedActivities, points, streak]);
 
-  const handleDeleteActivity = (id) => {
+  const handleDeleteActivity = useCallback((id) => {
     const actToDelete = loggedActivities.find(a => a.id === id);
     const updated = loggedActivities.filter(a => a.id !== id);
     setLoggedActivities(updated);
@@ -77,19 +78,17 @@ export default function App() {
       setPoints(newPoints);
       localStorage.setItem('aether_points', newPoints.toString());
     }
-  };
+  }, [loggedActivities, points]);
 
-  const handleRedeemOffset = (offset) => {
+  const handleRedeemOffset = useCallback((offset) => {
     const updatedRedeemed = [offset, ...redeemedOffsets];
     setRedeemedOffsets(updatedRedeemed);
     localStorage.setItem('aether_redeemed', JSON.stringify(updatedRedeemed));
 
-    // Subtract points
     const newPoints = points - offset.cost;
     setPoints(newPoints);
     localStorage.setItem('aether_points', newPoints.toString());
 
-    // Append to activities as a offset saving activity
     const offsetActivity = {
       id: offset.id,
       date: offset.date,
@@ -98,12 +97,12 @@ export default function App() {
       co2Impact: -offset.offsetKg,
       amount: 1,
       unit: 'project funded',
-      pointsEarned: 0 // Redeeming doesn't earn new points
+      pointsEarned: 0
     };
     const updatedActivities = [offsetActivity, ...loggedActivities];
     setLoggedActivities(updatedActivities);
     localStorage.setItem('aether_activities', JSON.stringify(updatedActivities));
-  };
+  }, [redeemedOffsets, points, loggedActivities]);
 
   const handleReset = () => {
     if (window.confirm('Resetting your account will delete baseline metrics and logging histories. Continue?')) {
@@ -157,16 +156,13 @@ export default function App() {
         {/* Action Panel: Reset & Points Indicator */}
         {baseline && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Award size={18} color="var(--accent-purple)" />
-              <span style={{ fontSize: '14px', fontWeight: '600' }}>{points} Eco Points</span>
-            </div>
-            
-            <button 
-              onClick={handleReset} 
-              className="btn btn-secondary" 
+            <ThemeToggle />
+            <button
+              onClick={handleReset}
+              className="btn btn-secondary"
               style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
               title="Reset configuration baseline"
+              aria-label="Reset configuration"
             >
               <RefreshCw size={12} /> Reset
             </button>
@@ -177,16 +173,16 @@ export default function App() {
       {/* Primary Dashboard Content Area */}
       <main style={{ flexGrow: 1, padding: '0 20px 40px 20px', maxWidth: '1200px', width: '100%', margin: '0 auto' }}>
         {!baseline ? (
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <div style={{ marginBottom: '24px' }}>
-              <h1 style={{ fontSize: '36px', fontFamily: 'var(--font-display)', fontWeight: '800' }}>
-                Track. Reduce. Offset.
-              </h1>
-              <p style={{ color: 'var(--text-secondary)', marginTop: '8px', fontSize: '15px' }}>
-                Calculate your current footprint baseline, implement habit changes, and redeem virtual offsets.
-              </p>
-            </div>
-            <Onboarding onComplete={(base, answers) => saveBaseline(base, parseInt(answers.reductionTarget, 10))} />
+          <div style={{ marginBottom: '24px' }}>
+            <h1 style={{ fontSize: '36px', fontFamily: 'var(--font-display)', fontWeight: '800' }}>
+              Track. Reduce. Offset.
+            </h1>
+            <p style={{ color: 'var(--text-secondary)', marginTop: '8px', fontSize: '15px' }}>
+              Calculate your current footprint baseline, implement habit changes, and redeem virtual offsets.
+            </p>
+            <Suspense fallback={<div>Loading...</div>}>
+              <Onboarding onComplete={(base, answers) => saveBaseline(base, parseInt(answers.reductionTarget, 10))} />
+            </Suspense>
           </div>
         ) : (
           <div className="animate-fade-in">
@@ -207,16 +203,15 @@ export default function App() {
               <button onClick={() => setActiveTab('sandbox')} className={`tab-btn ${activeTab === 'sandbox' ? 'active' : ''}`}>
                 <Compass size={16} /> Sandbox Simulator
               </button>
+              <button onClick={() => setActiveTab('calculator')} className={`tab-btn ${activeTab === 'calculator' ? 'active' : ''}`}>
+                <Compass size={16} /> Carbon Calculator
+              </button>
               <button onClick={() => setActiveTab('chat')} className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`}>
                 <MessageSquare size={16} /> EcoAI Assistant
               </button>
             </div>
 
             {/* Active components views */}
-            {activeTab === 'dashboard' && (
-              <Dashboard 
-                baseline={baseline} 
-                target={target} 
                 savings={totalSavingsKg} 
                 points={points} 
                 streak={streak}
@@ -248,10 +243,8 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'sandbox' && (
-              <SandboxCalculator 
-                baseline={baseline}
-              />
+            {activeTab === 'calculator' && (
+              <CarbonCalculator baseline={baseline} />
             )}
 
             {activeTab === 'chat' && (

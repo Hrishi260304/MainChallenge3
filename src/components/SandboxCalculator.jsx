@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Compass, Leaf, ArrowRight, TrendingDown } from 'lucide-react';
 import { calculateBaseline } from '../utils/carbonMath';
 
-export default function SandboxCalculator({ baseline }) {
+export default React.memo(function SandboxCalculatorDemo({ baseline }) {
   const [sandboxAnswers, setSandboxAnswers] = useState({
     carWeeklyMiles: baseline ? (baseline.transport * 1000 / 0.404 / 52).toFixed(0) : '60',
     carType: 'gas',
@@ -48,15 +48,19 @@ export default function SandboxCalculator({ baseline }) {
               <span style={{ color: 'var(--text-muted)' }}>{sandboxAnswers.carType} car</span>
             </div>
             <input
-              type="range"
-              name="carWeeklyMiles"
-              min="0"
-              max="400"
-              step="10"
-              value={sandboxAnswers.carWeeklyMiles}
-              onChange={handleChange}
-              className="slider-input"
-            />
+                type="range"
+                name="carWeeklyMiles"
+                min="0"
+                max="400"
+                step="10"
+                value={sandboxAnswers.carWeeklyMiles}
+                onChange={handleChange}
+                className="slider-input"
+                aria-label="Weekly driving miles slider"
+                aria-valuemin="0"
+                aria-valuemax="400"
+                aria-valuenow={sandboxAnswers.carWeeklyMiles}
+              />
             <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
               {['gas', 'hybrid', 'electric'].map(type => (
                 <button
@@ -86,26 +90,31 @@ export default function SandboxCalculator({ baseline }) {
               <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>${sandboxAnswers.monthlyElectricBill}</span>
             </div>
             <input
-              type="range"
-              name="monthlyElectricBill"
-              min="0"
-              max="350"
-              step="10"
-              value={sandboxAnswers.monthlyElectricBill}
-              onChange={handleChange}
-              className="slider-input"
-            />
+                type="range"
+                name="monthlyElectricBill"
+                min="0"
+                max="350"
+                step="10"
+                value={sandboxAnswers.monthlyElectricBill}
+                onChange={handleChange}
+                className="slider-input"
+                aria-label="Monthly electricity bill slider"
+                aria-valuemin="0"
+                aria-valuemax="350"
+                aria-valuenow={sandboxAnswers.monthlyElectricBill}
+              />
           </div>
 
           <div className="form-group">
             <label className="form-label" style={{ fontSize: '13px' }}>Dietary Habit Change</label>
             <select 
-              name="dietType" 
-              value={sandboxAnswers.dietType} 
-              onChange={handleChange} 
-              className="form-select"
-              style={{ padding: '10px' }}
-            >
+                name="dietType" 
+                value={sandboxAnswers.dietType} 
+                onChange={handleChange} 
+                className="form-select"
+                style={{ padding: '10px' }}
+                aria-label="Diet type selector"
+              >
               <option value="vegan">🌱 Shift completely to Vegan</option>
               <option value="vegetarian">🥚 Shift to Vegetarian</option>
               <option value="balanced">🥗 Balanced Diet (Moderate meat)</option>
@@ -116,12 +125,13 @@ export default function SandboxCalculator({ baseline }) {
           <div className="form-group">
             <label className="form-label" style={{ fontSize: '13px' }}>Consumer Buying habits</label>
             <select 
-              name="shoppingHabits" 
-              value={sandboxAnswers.shoppingHabits} 
-              onChange={handleChange} 
-              className="form-select"
-              style={{ padding: '10px' }}
-            >
+                name="shoppingHabits" 
+                value={sandboxAnswers.shoppingHabits} 
+                onChange={handleChange} 
+                className="form-select"
+                style={{ padding: '10px' }}
+                aria-label="Shopping habits selector"
+              >
               <option value="minimalist">📦 Minimalist (Local & eco items)</option>
               <option value="average">🛍️ Average consumption</option>
               <option value="frequent">🏷️ High consumer rate</option>
